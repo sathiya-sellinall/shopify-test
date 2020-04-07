@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cxf="http://camel.apache.org/schema/cxf" xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+<bean id="webHookCreator" class="com.sellinall.shopify.process.WebHookCreator"/>
+<!-- this is an included XML file where we only the the routeContext -->
+<routeContext id="webHookRoutes" xmlns="http://camel.apache.org/schema/spring">
+<route id="createWebHooksShopify">
+    <from uri="direct:createWebHooksShopify"/>
+    <multicast stopOnException="true">
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>orders/delete</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>orders/updated</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>orders/partially_fulfilled</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>fulfillment_events/create</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>fulfillment_events/delete</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>refunds/create</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+        <pipeline>
+            <setHeader headerName="webHookTopic">
+                <simple>products/create</simple>
+            </setHeader>
+            <process ref="webHookCreator"/>
+        </pipeline>
+    </multicast>
+    <process ref="myPrint"/>
+</route>
+</routeContext>
+</beans>
