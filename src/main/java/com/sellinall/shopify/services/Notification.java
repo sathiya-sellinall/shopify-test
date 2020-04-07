@@ -32,7 +32,7 @@ public class Notification {
 	@Path("/orders/{action}")
 	public Object receiveOrderNotification(@PathParam("action") String action, String payload,
 			@HeaderParam("X-Shopify-Shop-Domain") String shopUrl) throws Exception {
-		log.debug("received Order notificationData=" + payload);
+		log.info("received Order notificationData=" + payload);
 		JSONObject receiveOrderNotification = new JSONObject(payload);
 		receiveOrderNotification.put("shopUrl", shopUrl);
 		receiveOrderNotification.put("actionName", "orders");
@@ -54,7 +54,7 @@ public class Notification {
 	@Path("/fulfillment_events/{action}")
 	public Object receiveFulFillmentEventsNotification(@PathParam("action") String action, String payload,
 			@HeaderParam("X-Shopify-Shop-Domain") String shopUrl) throws Exception {
-		log.debug("received fulfillmentEvents notificationData=" + payload);
+		log.info("received fulfillmentEvents notificationData=" + payload);
 		JSONObject receiveFulFillmentEventsNotification = new JSONObject(payload);
 		receiveFulFillmentEventsNotification.put("shopUrl", shopUrl);
 		receiveFulFillmentEventsNotification.put("actionName", "fulfillmentEvents");
@@ -73,7 +73,7 @@ public class Notification {
 	@POST
 	@Path("/fulfillments/{action}")
 	public Object receiveFulFillmentsNotification(@PathParam("action") String action, String payload) throws Exception {
-		log.debug("received fulfillments notificationData=" + payload);
+		log.info("received fulfillments notificationData=" + payload);
 		JSONObject receiveFulFillmentsNotification = new JSONObject(payload);
 		receiveFulFillmentsNotification.put("actionName", "fulfillments");
 		// fulfillments/create, fulfillments/update
@@ -92,7 +92,7 @@ public class Notification {
 	@Path("/refunds/{action}")
 	public Object receiveRefundNotification(@PathParam("action") String action, String payload,
 			@HeaderParam("X-Shopify-Shop-Domain") String shopUrl) throws Exception {
-		log.debug("received Refund notificationData=" + payload);
+		log.info("received Refund notificationData=" + payload);
 		JSONObject receiveRefundNotification = new JSONObject(payload);
 		receiveRefundNotification.put("shopUrl", shopUrl);
 		receiveRefundNotification.put("actionName", "refunds");
@@ -106,7 +106,7 @@ public class Notification {
 	@Path("/products/{action}")
 	public Object receiveProductNotification(@PathParam("action") String action, String payload,
 			@HeaderParam("X-Shopify-Shop-Domain") String shopUrl) throws Exception {
-		log.debug("received Product notificationData=" + payload);
+		log.info("received Product notificationData=" + payload);
 		JSONObject receiveProductNotification = new JSONObject(payload);
 		receiveProductNotification.put("shopUrl", shopUrl);
 		receiveProductNotification.put("actionName", "products");
