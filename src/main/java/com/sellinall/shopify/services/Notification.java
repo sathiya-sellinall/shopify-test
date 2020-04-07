@@ -103,7 +103,7 @@ public class Notification {
 	}
 
 	@POST
-	@Path("/products/{action}")
+	@Path("/products/{action}" )
 	public Object receiveProductNotification(@PathParam("action") String action, String payload,
 			@HeaderParam("X-Shopify-Shop-Domain") String shopUrl) throws Exception {
 		log.info("received Product notificationData=" + payload);
