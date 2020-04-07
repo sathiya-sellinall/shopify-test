@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:cxf="http://camel.apache.org/schema/cxf"
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+	<bean id="initializePullInventoryRoute" class="com.sellinall.shopify.init.InitializePullInventoryRoute" />
+	<bean id="initializeUnlinkedInventoryRoute" class="com.sellinall.shopify.init.InitializeUnlinkedInventoryRoute" />
+	<bean id="loadAccountDataByNicknameId" class="com.sellinall.shopify.db.LoadAccountDataByNicknameId" />
+	<bean id="loadInventoryForAutoLinking" class="com.sellinall.shopify.db.LoadInventoryForAutoLinking" />
+	<bean id="loadNonVariantToVariantAutoLink" class="com.sellinall.shopify.db.LoadNonVariantToVariantAutoLink" />
+	<bean id="processInventoryForAutoLinking" class="com.sellinall.shopify.db.ProcessInventoryForAutoLinking" />
+	<bean id="checkIfItemExistsInUnlinked" class="com.sellinall.shopify.db.CheckIfItemExistsInUnlinked" />
+	<bean id="processUnlinkedSearchResult" class="com.sellinall.shopify.db.ProcessUnlinkedSearchResult" />
+	<bean id="buildMudraHeader" class="com.sellinall.shopify.requests.BuildMudraHeader" />
+	<bean id="constructPagingMessage" class="com.sellinall.shopify.message.ConstructPagingMessage" />
+
+	<bean id="pullInventoryFromSite" class="com.sellinall.shopify.requests.PullInventoryFromSite" />
+	<bean id="pullCategoryID" class="com.sellinall.shopify.requests.PullCategoryID" />
+	<bean id="getCategoryName" class="com.sellinall.shopify.requests.GetCategoryName" />
+
+	<bean id="processImageURL" class="com.sellinall.shopify.response.ProcessImageURL" />
+	<bean id="processUnlinkedInventory" class="com.sellinall.shopify.response.ProcessUnlinkedInventory" />
+	<bean id="processPullInventory" class="com.sellinall.shopify.response.ProcessPullInventory" />
+	<bean id="upsertUnlinkedInventory" class="com.sellinall.shopify.db.UpsertUnlinkedInventory" />
+
+	<bean id="createVariantChildren" class="com.sellinall.shopify.init.CreateVariantChildren" />
+	<bean id="initializeProcessPullInventoryByPage" class="com.sellinall.shopify.init.InitializeProcessPullInventoryByPage" />
+	<bean id="upsertUnlinkedInventoryVariants" class="com.sellinall.shopify.db.UpsertUnlinkedInventoryVariants" />
+
+	<bean id="handleException" class="com.sellinall.shopify.exception.HandleException" />
+
+	<bean id="constructMessageForBatch" class="com.sellinall.shopify.message.ConstructMessageForBatch" />
+	<bean id="processInventoryLevelStock" class="com.sellinall.shopify.process.ProcessInventoryLevelStock" />
+
+	<!-- this is an included XML file where we only the the routeContext -->
+	<routeContext id="pullInventoryRoutes" xmlns="http://camel.apache.org/schema/spring">
+		<route id="pullInventory">
+			<from uri="direct:pullInventory" />
+			<!-- need to listen to event -->
+			<process ref="initializePullInventoryRoute" />
+			<process ref="loadAccountDataByNicknameId" />
+			<to uri="direct:processPullInventory" />
+		</route>
+
+		<route id="pullCategoryID">
+			<from uri="direct:pullCategoryID" />
+			<process ref="pullCategoryID" />
+			<when>
+				<simple>${exchangeProperty.failureReason} != null</simple>
+				<setHeader headerName="importStatus">
+					<constant>COMPLETED_WITH_WARNING</constant>
+				</setHeader>
+				<to uri="direct:updateBatchProcessor" />
+				<stop />
+			</when>
+		</route>
+
+		<route id="processPullInventory">
+			<from uri="direct:processPullInventory" />
+			<to uri="direct:pullInventoryFromSite" />
+			<to uri="direct:processPullInventoryItems" />
+			<choice>
+				<when>
+					<simple>${exchangeProperty.stopProcess} == false and
+						${exchangeProperty.numberOfPages} >= ${exchangeProperty.pageNumber}
+					</simple>
+					<setHeader headerName="importStatus">
+						<constant>PROCESSING</constant>
+					</setHeader>
+					<to uri="direct:updateBatchProcessor" />
+					<to uri="direct:publishPageProcessingMessage" />
+				</when>
+				<otherwise>
+					<setHeader headerName="importStatus">
+						<constant>COMPLETED</constant>
+					</setHeader>
+					<to uri="direct:updateBatchProcessor" />
+				</otherwise>
+			</choice>
+		</route>
+
+		<route id="pullInventoryFromSite">
+			<from uri="direct:pullInventoryFromSite" />
+			<doTry>
+				<to uri="direct:pullCategoryID" />
+				<process ref="pullInventoryFromSite" />
+				<when>
+					<simple>${exchangeProperty.failureReason} != null</simple>
+					<setHeader headerName="importStatus">
+						<constant>COMPLETED_WITH_WARNING</constant>
+					</setHeader>
+					<to uri="direct:updateBatchProcessor" />
+					<stop />
+				</when>
+				<when>
+					<simple>${exchangeProperty.totalItemsInCurrentPage} == 0</simple>
+					<setHeader headerName="importStatus">
+						<constant>COMPLETED</constant>
+					</setHeader>
+					<to uri="direct:updateBatchProcessor" />
+					<stop />
+				</when>
+				<doCatch>
+					<exception>java.lang.Exception</exception>
+					<setHeader headerName="pullInventoryException">
+						<simple>${exception.stacktrace}</simple>
+					</setHeader>
+					<process ref="handleException" />
+					<setHeader headerName="importStatus">
+						<constant>COMPLETED_WITH_WARNING</constant>
+					</setHeader>
+					<to uri="direct:updateBatchProcessor" />
+					<stop />
+				</doCatch>
+			</doTry>
+		</route>
+
+		<route id="processPullInventoryItems">
+			<from uri="direct:processPullInventoryItems" />
+			<loop>
+				<simple>${exchangeProperty.totalItemsInCurrentPage}</simple>
+				<doTry>
+					<process ref="processPullInventory" />
+					<to uri="direct:checkItemExistInInventory" />
+					<to uri="direct:unlinkedInventory" />
+					<when>
+						<simple>${exchangeProperty.hasItemInInventoryDB} == true and ${exchangeProperty.isImageUploadedSuccessfully} == true</simple>
+						<to uri="direct:autoLinkExistingLinkedInventory" />
+					</when>
+					<setProperty propertyName="itemListIndex">
+						<simple>${exchangeProperty.itemListIndex}++</simple>
+					</setProperty>
+					<doCatch>
+						<exception>java.lang.Exception</exception>
+						<setHeader headerName="pullInventoryException">
+							<simple>${exception.stacktrace}</simple>
+						</setHeader>
+						<process ref="handleException" />
+						<setProperty propertyName="noOfItemSkipped">
+							<simple>${exchangeProperty.noOfItemSkipped}++</simple>
+						</setProperty>
+					</doCatch>
+				</doTry>
+			</loop>
+			<setProperty propertyName="pageNumber">
+				<simple>${exchangeProperty.pageNumber}++</simple>
+			</setProperty>
+		</route>
+
+		<route id="publishPageProcessingMessage">
+			<from uri="direct:publishPageProcessingMessage" />
+			<process ref="constructPagingMessage" />
+			<setHeader headerName="rabbitmq.ROUTING_KEY">
+				<constant>shopifyListingKey</constant>
+			</setHeader>
+			<setHeader headerName="rabbitmq.DELIVERY_MODE">
+				<constant>2</constant>
+			</setHeader>
+			<convertBodyTo type="java.lang.String" />
+			<to
+				uri="rabbitmq://{{rabbitmq.host}}:{{rabbitmq.tx.port}}/shopifyListingExchange?connectionFactory=#txCustomConnectionFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false"
+				pattern="InOnly" />
+		</route>
+
+		<route id="processPullInventoryByPage">
+			<from uri="direct:processPullInventoryByPage" />
+			<process ref="initializeProcessPullInventoryByPage" />
+			<process ref="loadAccountDataByNicknameId" />
+			<to uri="direct:processPullInventory" />
+		</route>
+		
+		<route id="checkItemExistInInventory">
+			<from uri="direct:checkItemExistInInventory" />
+			<process ref="loadInventoryForAutoLinking" />
+			<to uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=findAll" />
+			<process ref="processInventoryForAutoLinking" />
+			<when>
+				<simple>${exchangeProperty.hasItemInInventoryDB} == false and ${exchangeProperty.hasVariations} == false</simple>
+				<!-- here we are trying to link non-variant to specific child record -->
+				<process ref="loadNonVariantToVariantAutoLink" />
+				<to uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=findAll" />
+				<process ref="processInventoryForAutoLinking" />
+			</when>
+		</route>
+		
+		<route id="autoLinkExistingLinkedInventory">
+			<from uri="direct:autoLinkExistingLinkedInventory" />
+			<to uri="freemarker:classpath:templates/shopify/LinkInventory.ftl?contentCache=true" />
+			<process ref="buildMudraHeader" />
+			<recipientList>
+				<simple>{{inventory.endpoint}}/unlinkedInventory/item/${exchangeProperty.unlinkedInventorySKU}
+				</simple>
+			</recipientList>
+			<setProperty propertyName="linked">
+				<simple resultType="java.lang.Boolean">true</simple>
+			</setProperty>
+			<setProperty propertyName="noOfItemLinked">
+				<simple>${exchangeProperty.noOfItemLinked}++</simple>
+			</setProperty>
+			<setProperty propertyName="noOfItemUnLinked">
+				<simple>${exchangeProperty.noOfItemUnLinked}--</simple>
+			</setProperty>
+		</route>
+		
+		<route id="processUnlinkedInventory">
+			<from uri="direct:unlinkedInventory" />
+			<to uri="direct:unlinkedInventoryProcess" />
+			<when>
+				<simple>${exchangeProperty.isImageUploadedSuccessfully} == true</simple>
+				<process ref="upsertUnlinkedInventory" />
+				<to
+					uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=unlinkedInventory&amp;operation=update" />
+				<setProperty propertyName="noOfItemUnLinked">
+					<simple>${exchangeProperty.noOfItemUnLinked}++</simple>
+				</setProperty>
+				<setProperty propertyName="noOfItemCompleted">
+					<simple>${exchangeProperty.noOfItemCompleted}++</simple>
+				</setProperty>
+				<when>
+					<simple>${exchangeProperty.hasVariations} == true</simple>
+					<to uri="direct:processVariants" />
+				</when>
+			</when>
+		</route>
+		<route id="unlinkedInventoryProcess">
+			<from uri="direct:unlinkedInventoryProcess" />
+			<to uri="direct:checkItemExistInUnlinkedInventory" />
+			<process ref="initializeUnlinkedInventoryRoute" />
+			<process ref="getCategoryName" />
+			<process ref="processImageURL" />
+			<when>
+				<simple>${exchangeProperty.activeLocationIdList.size} > 0</simple>
+				<process ref="pullShopifyInventoryDetails" />
+				<process ref="processInventoryLevelStock"/>
+			</when>
+			<process ref="processUnlinkedInventory" />
+		</route>
+
+		<route id="updateBatchProcessor">
+			<from uri="direct:updateBatchProcessor" />
+			<process ref="constructMessageForBatch" />
+			<setHeader headerName="rabbitmq.ROUTING_KEY">
+				<constant>batchProcessorKey</constant>
+			</setHeader>
+			<setHeader headerName="rabbitmq.DELIVERY_MODE">
+				<constant>2</constant>
+			</setHeader>
+			<convertBodyTo type="java.lang.String" />
+			<to
+				uri="rabbitmq://{{batchProcessor.host}}:{{batchProcessor.tx.port}}/batchProcessorExchange?connectionFactory=#txbatchProcessorFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false" />
+		</route>
+		
+		<route id="checkItemExistInUnlinkedInventory">
+			<from uri="direct:checkItemExistInUnlinkedInventory" />
+			<process ref="checkIfItemExistsInUnlinked" />
+			<to
+				uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=unlinkedInventory&amp;operation=findOneByQuery" />
+			<process ref="processUnlinkedSearchResult" />
+		</route>
+
+		<route id="processVariants">
+			<from uri="direct:processVariants" />
+			<process ref="createVariantChildren" />
+			<split parallelProcessing="true">
+				<simple>${body}</simple>
+				<process ref="upsertUnlinkedInventoryVariants" />
+				<to
+					uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=unlinkedInventory&amp;operation=update" />
+			</split>
+		</route>
+	</routeContext>
+</beans>

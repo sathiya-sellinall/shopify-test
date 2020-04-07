@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:cxf="http://camel.apache.org/schema/cxf"
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+   <bean id="initChannelBatchRoute" class="com.sellinall.shopify.init.InitChannelBatchRoute" />
+   <bean id="initBatchRequest" class="com.sellinall.shopify.init.InitBatchRequest" />
+   <bean id="initSKUMap" class="com.sellinall.shopify.init.InitSKUMap" />
+   <bean id="prepareBatchMessage" class="com.sellinall.shopify.message.PrepareBatchMessage" />
+   <bean id="constructBatchMessage" class="com.sellinall.shopify.message.ConstructBatchMessage" />
+   <bean id="splitterBeanForSKUMap" class="com.sellinall.shopify.splitter.SplitterBeanForSKUMap" />
+   <bean id="skuMapAggregator" class="com.sellinall.shopify.splitter.SKUMapAggregator" />
+   
+   <!-- this is an included XML file where we only the the routeContext -->
+    <routeContext id="batchProcessorRoutes" xmlns="http://camel.apache.org/schema/spring">
+	  <route id="batchAddItem">
+			<from uri="direct:batchAddItem" />
+			<process ref="initChannelBatchRoute" />
+			<split parallelProcessing="true" strategyRef="skuMapAggregator">
+				<method ref="splitterBeanForSKUMap" method="splitSKUMap" />
+				<process ref="initSKUMap" />
+				<split parallelProcessing="true">
+					<method ref="splitterBean" method="splitNickNames" />
+					<to uri="direct:loadData" />
+					<to uri="direct:post" />
+					<process ref="prepareBatchMessage" />
+					<split parallelProcessing="true">
+						<simple>${body}</simple>
+						<to uri="direct:publishMessageToBatch" />
+					</split>
+				</split>
+			</split>
+		</route>
+		
+		<route id="publishMessageToBatch">
+			<from uri="direct:publishMessageToBatch"/>
+			<process ref="constructBatchMessage" />
+			<setHeader headerName="rabbitmq.ROUTING_KEY">
+				<constant>batchProcessorKey</constant>
+			</setHeader>
+			<setHeader headerName="rabbitmq.DELIVERY_MODE">
+				<constant>2</constant>
+			</setHeader>
+			<convertBodyTo type="java.lang.String" />
+			<to
+				uri="rabbitmq://{{batchProcessor.host}}:{{batchProcessor.tx.port}}/batchProcessorExchange?connectionFactory=#txbatchProcessorFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false" />
+		</route>
+    </routeContext>
+</beans>

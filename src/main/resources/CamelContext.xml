@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cxf="http://camel.apache.org/schema/cxf" xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+	<bean id="myPrint" class="com.sellinall.shopify.LoggingProcessor" />
+	<bean id="processAddItemRequest" class="com.sellinall.shopify.process.ProcessAddItemRequest" />
+	<bean id="processVariantRequest" class="com.sellinall.shopify.process.ProcessVariantRequest" />
+	<bean id="processUpdateRequest" class="com.sellinall.shopify.process.ProcessUpdateRequest" />
+	<bean id="processQuantityUpdateRequest" class="com.sellinall.shopify.process.ProcessQuantityUpdateRequest" />
+	<bean id="processAddQuantityRequest" class="com.sellinall.shopify.requests.ProcessAddQuantityRequest" />
+	<bean id="linkProductToCategory" class="com.sellinall.shopify.process.LinkProductToCategory" />
+	<bean id="processQuantityUpdate" class="com.sellinall.shopify.process.ProcessQuantityUpdate" />
+	<bean id="initializeMessageListenerRoute" class="com.sellinall.shopify.init.InitializeMessageListenerRoute" />
+	<bean id="initializeStartRoute" class="com.sellinall.shopify.init.InitializeStartRoute" />
+	<bean id="initializeRoute" class="com.sellinall.shopify.init.InitializeRoute" />
+	<bean id="initializeInventory" class="com.sellinall.shopify.init.InitializeInventory" />
+	<bean id="initializeProcessNotification"
+		class="com.sellinall.shopify.init.InitializeProcessNotification" />
+	<bean id="initializeProductNotification" class="com.sellinall.shopify.init.InitializeProductNotification" />
+	<bean id="processPostResponse" class="com.sellinall.shopify.response.ProcessPostResponse" />
+	<bean id="convertToJSON"
+		class="com.sellinall.shopify.util.ByteArrayToJSONTypeConverters" />
+
+	<bean id="constructMessageForPNQ" class="com.sellinall.shopify.message.ConstructMessageForPNQ" />
+
+	<bean id="createSKUDBQuery" class="com.sellinall.shopify.db.CreateSKUDBQuery" />
+	<bean id="loadInventoryBySKU" class="com.sellinall.shopify.db.LoadInventoryBySKU" />
+	<bean id="updateNotification" class="com.sellinall.shopify.db.UpdateNotification" />
+	<bean id="removeNotificationFromDB" class="com.sellinall.shopify.db.RemoveNotificationFromDB" />
+	<bean id="prepareReferenceIDQuery" class="com.sellinall.shopify.db.PrepareReferenceIDQuery" />
+	<bean id="processReferenceIDResult" class="com.sellinall.shopify.db.ProcessReferenceIDResult" />
+	<bean id="userDBQuery" class="com.sellinall.shopify.db.UserDBQuery" />
+	<bean id="checkAccountAlreadyExist" class="com.sellinall.shopify.db.CheckAccountAlreadyExist" />
+
+	<bean id="loadAccountByShopURL" class="com.sellinall.shopify.db.LoadAccountByShopURL" />
+	
+	<bean id="processSKUDBQueryResult" class="com.sellinall.shopify.db.ProcessSKUDBQueryResult" />
+	<!-- need to Change 'processSKUDBQueryResult' like all other channel -->
+	<!-- if we changed the code Add post and Update Item flow will not work -->
+	<!-- Temp Use i have copied from eBay -->
+	<bean id="processInventoryDBQueryResult" class="com.sellinall.shopify.db.ProcessInventoryDBQueryResult" />
+	
+	<bean id="processUserDBQueryResult" class="com.sellinall.shopify.db.ProcessUserDBQueryResult" />
+
+	<bean id="updateSKUDBQuery" class="com.sellinall.shopify.db.UpdateSKUDBQuery" />
+	<bean id="updateVariantParentSKUDBQuery" class="com.sellinall.shopify.db.UpdateVariantParentSKUDBQuery" />
+
+	<bean id="insertAndProcessNotification" class="com.sellinall.shopify.db.InsertAndProcessNotification" />
+
+	<bean id="initGetCategories" class="com.sellinall.shopify.init.InitGetCategories" />
+	<bean id="getCategoriesFromSite" class="com.sellinall.shopify.requests.GetCategoriesFromSite" />
+	<bean id="parseCategories" class="com.sellinall.shopify.response.ParseCategories" />
+	<bean id="updateLastCategorySyncTime" class="com.sellinall.shopify.db.UpdateLastCategorySyncTime" />
+
+	<bean id="initializeAccount" class="com.sellinall.shopify.init.InitializeAccount" />
+	<bean id="validateAccountDetails" class="com.sellinall.shopify.requests.ValidateAccountDetails" />
+	<bean id="validateCategoryIdInShopifySite" class="com.sellinall.shopify.requests.ValidateCategoryIdInShopifySite" />
+
+	<bean id="checkReferenceIdAlreadyExists" class="com.sellinall.shopify.requests.CheckReferenceIdAlreadyExists" />
+	<bean id="updateAccountDetails" class="com.sellinall.shopify.db.UpdateAccountDetails" />
+	<bean id="addAccountDetails" class="com.sellinall.shopify.db.AddAccountDetails" />
+
+	<bean id="processRemoveItem" class="com.sellinall.shopify.process.ProcessRemoveItem"/>
+	<bean id="checkIsChannelConnectedToFB" class="com.sellinall.shopify.db.CheckIsChannelConnectedToFB" />
+	<bean id="createPublishMessageToFB" class="com.sellinall.shopify.message.CreatePublishMessageToFB" />
+	<bean id="constructResponseMessage" class="com.sellinall.shopify.message.ConstructResponseMessage" />
+	<bean id="constructProcessNotificationMsg" class="com.sellinall.shopify.message.ConstructProcessNotificationMsg" />
+	<bean id="initNotificationRoute" class="com.sellinall.shopify.init.InitNotificationRoute" />
+	<bean id="processNotification" class="com.sellinall.shopify.db.ProcessNotification" />
+	<bean id="pullShopifyInventoryDetails" class="com.sellinall.shopify.requests.PullShopifyInventoryDetails" />
+	<bean id="ignoreRequest" class="com.sellinall.shopify.message.IgnoreRequest" />
+	<bean id="constructStockUpdatePayload" class="com.sellinall.shopify.message.ConstructStockUpdatePayload" />
+	<bean id="pullLocationDetailsFromSite" class="com.sellinall.shopify.requests.PullLocationDetailsFromSite" />
+	<bean id="environmentVariablesConfiguration"
+		class="org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig">
+		<property name="algorithm" value="PBEWithMD5AndDES" />
+		<property name="passwordEnvName" value="APP_ENCRYPTION_PASSWORD" />
+	</bean>
+	<bean id="configurationEncryptor" class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+		<property name="config" ref="environmentVariablesConfiguration" />
+	</bean>
+	<bean
+		class="org.jasypt.spring31.properties.EncryptablePropertyPlaceholderConfigurer">
+		<constructor-arg ref="configurationEncryptor" />
+		<property name="locations">
+			<value>classpath:config.properties</value>
+		</property>
+	</bean>
+	<bean id="splitterBean" class="com.sellinall.shopify.splitter.SplitterBean" />
+
+	<bean id="properties"
+		class="org.apache.camel.component.properties.PropertiesComponent">
+		<property name="location" value="classpath:config.properties" />
+	</bean>
+
+	<!-- mongo db bean -->
+	<bean id="mongoInventoryBean" class="com.mongodb.MongoClient">
+		<constructor-arg index="0">
+			<bean class="com.mongodb.MongoClientURI">
+				<constructor-arg index="0" value="${mongo.inventory.uri}" />
+			</bean>
+		</constructor-arg>
+	</bean>
+
+	<bean id="rxListingQConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${rabbitmq.host}" />
+		<property name="port" value="${rabbitmq.rx.port}" />
+		<property name="username" value="${rabbitmq.username}" />
+		<property name="password" value="${rabbitmq.password}" />
+		<property name="virtualHost" value="${rabbitmq.virtualHost}" />
+		<property name="automaticRecoveryEnabled" value="true"/>
+		<property name="networkRecoveryInterval" value="0"/>
+	</bean>
+
+	<bean id="txCustomConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${rabbitmq.host}" />
+		<property name="port" value="${rabbitmq.rx.port}" />
+		<property name="username" value="${rabbitmq.username}" />
+		<property name="password" value="${rabbitmq.password}" />
+		<property name="virtualHost" value="${rabbitmq.virtualHost}" />
+		<property name="automaticRecoveryEnabled" value="true"/>
+		<property name="networkRecoveryInterval" value="0"/>
+	</bean>
+
+	<!-- Rabbit mq bean for PartnerNotifMessageServ -->
+	<bean id="txPartnerNotifFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${partnerNotif.host}" />
+		<property name="port" value="${partnerNotif.tx.port}" />
+		<property name="username" value="${partnerNotif.username}" />
+		<property name="password" value="${partnerNotif.password}" />
+		<property name="virtualHost" value="${partnerNotif.virtualHost}" />
+		<property name="automaticRecoveryEnabled" value="true"/>
+		<property name="networkRecoveryInterval" value="0"/>
+	</bean>
+	
+	<bean id="txbatchProcessorFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${batchProcessor.host}" />
+		<property name="port" value="${batchProcessor.rx.port}" />
+		<property name="username" value="${batchProcessor.username}" />
+		<property name="password" value="${batchProcessor.password}" />
+		<property name="virtualHost" value="${batchProcessor.virtualHost}" />
+		<property name="automaticRecoveryEnabled" value="true"/>
+		<property name="networkRecoveryInterval" value="0"/>
+	</bean>
+
+	<bean id="fbConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${FB.host}" />
+		<property name="port" value="${FB.port}" />
+		<property name="username" value="${FB.username}" />
+		<property name="password" value="${FB.password}" />
+		<property name="virtualHost" value="${FB.virtualHost}" />
+		<property name="automaticRecoveryEnabled" value="true"/>
+		<property name="networkRecoveryInterval" value="0"/>
+	</bean>
+
+	<import resource="CamelContextBatch.xml" />
+	<import resource="CamelContextPullInventory.xml" />
+	<import resource="CamelContextWebhooks.xml" />
+	<import resource="CamelContextUpdateOrder.xml" />
+
+	<!-- The camel route context -->
+	<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+		<routeContextRef ref="batchProcessorRoutes" />
+		<routeContextRef ref="pullInventoryRoutes" />
+		<routeContextRef ref="webHookRoutes"/>
+		<routeContextRef ref="updateOrderRoutes" />
+
+		<route id="addAccount">
+			<from uri="direct:addAccount" />
+			<process ref="initializeAccount" />
+			<process ref="checkAccountAlreadyExist" />
+			<when>
+				<simple>${exchangeProperty.accountAlreadyExists} == false</simple>
+				<process ref="validateAccountDetails" />
+				<when>
+					<simple>${exchangeProperty.isValidAccount} == true</simple>
+					<process ref="addAccountDetails" />
+				</when>
+			</when>
+			<process ref="constructResponseMessage" />
+		</route>
+
+		<route id="updateAccount">
+			<from uri="direct:updateAccount" />
+			<process ref="initializeAccount" />
+			<when>
+				<simple>${exchangeProperty.needToValidateAccount} == true</simple>
+				<process ref="validateAccountDetails" />
+			</when>
+			<process ref="updateAccountDetails" />
+			<process ref="constructResponseMessage" />
+		</route>
+
+		<route>
+			<from uri="direct:syncCategories" />
+			<process ref="initGetCategories" />
+			<process ref="userDBQuery" />
+			<process ref="getCategoriesFromSite" />
+			<process ref="updateLastCategorySyncTime" />
+			<process ref="constructResponseMessage" />
+		</route>
+
+		<route id="startPost">
+			<from uri="direct:startPost" />
+			<process ref="initializeStartRoute" />
+			<split parallelProcessing="true">
+				<method ref="splitterBean" method="splitNickNames" />
+				<to uri="direct:loadData" />
+				<to uri="direct:post" />
+			</split>
+		</route>
+
+		<route id="post">
+			<from uri="direct:post" />
+			<process ref="initializeRoute" />
+			<when>
+				<simple>${exchangeProperty.categoryId} != null</simple>
+				<process ref="validateCategoryIdInShopifySite" />
+			</when>
+			<choice>
+				<when>
+					<simple>${exchangeProperty.isValidCategoryId} == true</simple>
+					<to uri="direct:processItemPosting" />
+				</when>
+				<otherwise>
+					<to uri="direct:updatePostingStatus" />
+				</otherwise>
+			</choice>
+		</route>
+
+		<route id="updatePostingStatus">
+			<from uri="direct:updatePostingStatus" />
+			<process ref="updateVariantParentSKUDBQuery" />
+			<to uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=update" />
+		</route>
+
+		<route id="processItemPosting">
+			<from uri="direct:processItemPosting" />
+			<choice>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'batchEditItem'</simple>
+					<choice>
+						<when><simple>${exchangeProperty.warehouseLocationMap.size} > 0</simple>
+                                               <process ref="pullLocationDetailsFromSite" />
+							<choice>
+							  <when><simple>${exchangeProperty.locationsList.size} > 1</simple>
+									<process ref="ignoreRequest"/>
+							  </when>
+							  <otherwise>
+					               <to uri="freemarker:classpath:templates/shopify/updateProduct.ftl?contentCache=false" />
+							       <to uri="direct:processAddItemRequest" />
+							       <to uri="direct:processAddItemQuantity" />
+							  </otherwise>
+							</choice>
+						</when>
+						<otherwise>
+							<to uri="freemarker:classpath:templates/shopify/updateProduct.ftl?contentCache=false" />
+							<to uri="direct:processAddItemRequest" />
+							<to uri="direct:processAddItemQuantity" />
+						</otherwise>
+					</choice>
+				</when>
+				<otherwise>
+					<choice>
+						<when>
+							<simple>${exchangeProperty.warehouseLocationMap.size} > 0</simple>
+							<process ref="pullLocationDetailsFromSite" />
+							<choice>
+								<when>
+									<simple>${exchangeProperty.locationsList.size} > 1</simple>
+									<process ref="ignoreRequest" />
+								</when>
+								<otherwise>
+									<to
+										uri="freemarker:classpath:templates/shopify/createProduct.ftl?contentCache=false" />
+									<to uri="direct:processAddItemRequest" />
+									<to uri="direct:processAddItemQuantity" />
+								</otherwise>
+							</choice>
+						</when>
+						<otherwise>
+							<to
+								uri="freemarker:classpath:templates/shopify/createProduct.ftl?contentCache=false" />
+							<to uri="direct:processAddItemRequest" />
+							<to uri="direct:processAddItemQuantity" />
+						</otherwise>
+					</choice>
+					<when>
+						<simple>${exchangeProperty.productId} != null and ${exchangeProperty.categoryId} != null</simple>
+						<process ref="linkProductToCategory" />
+					</when>
+				</otherwise>
+			</choice>
+			<split parallelProcessing="false">
+				<simple>${exchangeProperty.updateObjectList}</simple>
+				<to uri="direct:updatePostingStatus" />
+			</split>
+		</route>
+
+		<route id="processAddItemRequest">
+			<from uri="direct:processAddItemRequest" />
+			<process ref="processAddItemRequest" />
+			<process ref="processPostResponse" />
+		</route>
+		
+		<route id="processAddItemQuantity">
+			<from uri="direct:processAddItemQuantity" />
+			<when><simple>${exchangeProperty.isItemPosted} == "true"</simple>
+				<process ref="pullLocationDetailsFromSite" />
+				<choice>
+					<when>
+						<simple>${exchangeProperty.locationsList.size} > 1</simple>
+						<process ref="ignoreRequest" />
+					</when>
+					<otherwise>
+						<process ref="processQuantityUpdate" />
+						<loop>
+							<simple>${exchangeProperty.stockUpdatePayloadList.size}</simple>
+							<setProperty propertyName="payloadIndex">
+								<simple>${exchangeProperty.CamelLoopIndex}</simple>
+							</setProperty>
+							<to
+								uri="freemarker:classpath:templates/shopify/setQuantity.ftl?contentCache=false" />
+							<process ref="processAddQuantityRequest" />
+						</loop>
+					</otherwise>
+				</choice>
+			</when>
+		</route>
+		
+		<route id="loadData">
+			<from uri="direct:loadData" />
+			<process ref="createSKUDBQuery" />
+			<to
+				uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=findAll" />
+			<process ref="processSKUDBQueryResult" />
+			<process ref="userDBQuery" />
+			<process ref="processUserDBQueryResult" />
+		</route>
+		
+		<route id="loadInventoryDataByReferenceID">
+			<from uri="direct:loadInventoryDataByReferenceID" />
+			<process ref="prepareReferenceIDQuery" />
+			<to
+				uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=findAll" />
+			<process ref="processReferenceIDResult" />
+		</route>
+		<route id="startUpdate">
+			<from uri="direct:startUpdate" />
+			<process ref="initializeStartRoute" />
+			<process ref="userDBQuery" />
+			<process ref="loadInventoryBySKU" />
+			<split parallelProcessing="true">
+				<method ref="splitterBean" method="splitInventory" />
+				<to uri="direct:update" />
+			</split>
+		</route>
+		<route id="update">
+			<from uri="direct:update" />
+			<process ref="initializeInventory" /> <!-- Here get location size from user db -->
+			<when>
+				<simple>${exchangeProperty.isEligibleToProceed} == true</simple>
+				<when>
+					<simple>${exchangeProperty.isPriceUpdate} == true</simple>
+					<to uri="freemarker:classpath:templates/shopify/priceUpdate.ftl?contentCache=false" />
+					<process ref="processUpdateRequest" />
+					<process ref="processPostResponse" />
+					<process ref="updateSKUDBQuery" />
+					<to	uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=update" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.isQuantityUpdate} == true</simple>
+						<choice>
+							<when>
+								<simple>${exchangeProperty.warehouseLocationMap.size} > 0</simple>
+								<choice>
+									<when>
+										<simple>${exchangeProperty.isQuantityUpdateByNewOrder} == false
+										</simple>
+										<choice>
+											<when>
+												<simple>${exchangeProperty.warehouseLocationMap.size} == 1 </simple>
+												<process ref="constructStockUpdatePayload" /> 
+												<setProperty propertyName="payloadIndex">
+													<simple>0</simple>
+												</setProperty>
+												<to
+													uri="freemarker:classpath:templates/shopify/setQuantity.ftl?contentCache=false" />
+												<process ref="processQuantityUpdateRequest" />
+												<process ref="processPostResponse" />
+											</when>
+											<otherwise>
+				                             <!-- 	 like Stop process but update status to Database -->
+												<process ref="ignoreRequest" />
+											</otherwise>
+										</choice>
+									</when>
+									<otherwise>
+										<process ref="pullShopifyInventoryDetails" /> 
+										<process ref="constructStockUpdatePayload" /> 
+										<when><simple>${exchangeProperty.stockUpdatePayloadList.size} == 0</simple>
+											<process ref="ignoreRequest"/>
+										</when>
+										<when><simple>${exchangeProperty.stockUpdatePayloadList.size} > 0</simple>
+											<loop>
+											 	<simple>${exchangeProperty.stockUpdatePayloadList.size}</simple>
+												<setProperty propertyName="payloadIndex">
+													<simple>${exchangeProperty.CamelLoopIndex}</simple>
+												</setProperty>
+												<to
+													uri="freemarker:classpath:templates/shopify/setQuantity.ftl?contentCache=false" />
+												<process ref="processQuantityUpdateRequest" />
+												<process ref="processPostResponse" />
+											</loop>
+										</when>
+									</otherwise>
+								</choice>
+								<process ref="updateSKUDBQuery" />
+										<to
+											uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=update" />
+							</when>
+							<otherwise>
+								<to
+									uri="freemarker:classpath:templates/shopify/quantityUpdate.ftl?contentCache=false" />
+								<process ref="processUpdateRequest" />
+								<process ref="processPostResponse" />
+								<process ref="updateSKUDBQuery" />
+								<to
+									uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=update" />
+							</otherwise>
+						</choice>
+					</when>
+			</when>
+		</route>
+
+		<route id="initNotification">
+			<from uri="direct:initNotification" />
+			<process ref="initNotificationRoute" />
+			<setHeader headerName="SupportedNotification">
+				<constant>1</constant>
+			</setHeader>
+			<process ref="insertAndProcessNotification" />
+			<to uri="direct:publishProcessNotificationMsg" />
+		</route>
+
+		<route id="publishProcessNotificationMsg">
+			<from uri="direct:publishProcessNotificationMsg" />
+			<process ref="constructProcessNotificationMsg" />
+			<setHeader headerName="rabbitmq.ROUTING_KEY">
+				<constant>shopifyListingKey</constant>
+			</setHeader>
+			<setHeader headerName="rabbitmq.DELIVERY_MODE">
+				<constant>2</constant>
+			</setHeader>
+			<convertBodyTo type="java.lang.String" />
+			<to
+				uri="rabbitmq://{{rabbitmq.host}}:{{rabbitmq.tx.port}}/shopifyListingExchange?connectionFactory=#txCustomConnectionFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false"
+				pattern="InOnly" />
+		</route>
+
+		<route id="processNotification">
+			<from uri="direct:processNotification" />
+			<doTry>
+				<process ref="processNotification" />
+				<when>
+				  <simple>${exchangeProperty.hasNotificationDBRecord} == false</simple>
+				  <stop />
+				</when>
+				<process ref="initializeProcessNotification" />
+				<process ref="loadAccountByShopURL" />
+				<when>
+				  <simple>${exchangeProperty.stopProcess} == true</simple>
+				  <stop />
+				</when>
+				<when>
+					<simple>${exchangeProperty.actionName} == 'products'</simple>
+					<process ref="loadAccountDataByNicknameId" />
+					<process ref="checkReferenceIdAlreadyExists" />
+					<when>
+						<simple>${exchangeProperty.isItemAlreadyPosted} == false</simple>
+						<delay>
+							<constant>5000</constant> <!-- sleep to avoid empty image response from shopify  -->
+						</delay>
+						<to uri="direct:processPullInventoryForProductNotification" />
+					</when>
+					<process ref="removeNotificationFromDB" />
+					<stop />
+				</when>
+				<when>
+					<simple>${exchangeProperty.hasUserDBRecord} == true</simple>
+					<when>
+						<simple>${exchangeProperty.actionName} == 'orders'</simple>
+						<to uri="direct:loadInventoryDataByReferenceID" />
+					</when>
+					<process ref="constructMessageForPNQ" />
+					<setHeader headerName="rabbitmq.ROUTING_KEY">
+						<constant>partnerNotifKey</constant>
+					</setHeader>
+					<setHeader headerName="rabbitmq.DELIVERY_MODE">
+						<constant>2</constant>
+					</setHeader>
+					<convertBodyTo type="java.lang.String" />
+					<to
+						uri="rabbitmq://{{partnerNotif.host}}:{{partnerNotif.tx.port}}/partnerNotifExchange?connectionFactory=#txPartnerNotifFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false" />
+					<process ref="removeNotificationFromDB" />
+				</when>
+				<doCatch>
+					<exception>java.lang.Exception</exception>
+					<exception>org.json.JSONException</exception>
+					<handled>
+						<constant>true</constant>
+					</handled>
+					<setHeader headerName="isExceptionOccured">
+						<constant>1</constant>
+					</setHeader>
+					<process ref="updateNotification" />
+				</doCatch>
+			</doTry>
+		</route>
+
+		<route id="processUnsupportedNotification">
+			<from uri="direct:processUnsupportedNotification" />
+			<process ref="initializeProcessNotification" />
+			<setHeader headerName="SupportedNotification">
+				<constant>0</constant>
+			</setHeader>
+			<process ref="insertAndProcessNotification" />
+		</route>
+
+		<route id="processPullInventoryForProductNotification">
+			<from uri="direct:processPullInventoryForProductNotification" />
+			<process ref="initializeProductNotification"/>
+			<process ref="pullCategoryID" />
+			<process ref="processPullInventory" />
+			<to uri="direct:checkItemExistInInventory" />
+			<to uri="direct:unlinkedInventory" />
+			<when>
+				<simple>${exchangeProperty.hasItemInInventoryDB} == true</simple>
+				<to uri="direct:autoLinkExistingLinkedInventory" />
+			</when>
+		</route>
+
+		<route id="loadInventoryData">
+			<from uri="direct:loadInventoryData" />
+			<process ref="createSKUDBQuery" />
+			<to uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=findAll" />
+			<!-- once loadDate route refactor here also we need to change bean name  -->
+			<process ref="processInventoryDBQueryResult" />
+		</route>
+		
+		<route id="removeArrayItem">
+			<from uri="direct:removeArrayItem" />
+			<split parallelProcessing="true">
+				<method ref="splitterBean" method="splitSKU" />
+				<to uri="direct:removeItem"/> 
+			</split>
+		</route>
+		
+		<route id="removeItem">
+			<from uri="direct:removeItem" />	
+			<process ref="initializeStartRoute" />
+			<process ref="userDBQuery" />
+			<process ref="loadInventoryBySKU" />
+			<split parallelProcessing="true">
+				<method ref="splitterBean" method="splitInventory" />
+				<process ref="processRemoveItem"/>
+				<choice>
+					<when>
+						<simple>${exchangeProperty.itemRemoved} == true</simple>
+						<process ref="updateSKUDBQuery" />
+						<to
+							uri="mongodb:mongoInventoryBean?database={{mongo.inventory.database}}&amp;collection=inventory&amp;operation=update" />
+					</when>
+				</choice>
+			</split>
+		</route>
+		<route id="publishToMQFB">
+			<from uri="direct:publishToFB" />
+				<process ref="checkIsChannelConnectedToFB" />
+					<when>
+					    <simple>${exchangeProperty.isNickNameIDConnectedToFB} == true</simple>
+					    <process ref="createPublishMessageToFB" />
+					    <setHeader headerName="rabbitmq.ROUTING_KEY">
+						<constant>postedItemsKey</constant>
+					     </setHeader>
+					    <convertBodyTo type="java.lang.String" />
+					    <to
+							uri="rabbitmq://{{FB.host}}:{{FB.port}}/postedItemsExchange?connectionFactory=#fbConnectionFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false" />
+					</when>
+		</route>
+
+		<route id="messageListener">
+			<from
+				uri="rabbitmq://{{rabbitmq.host}}:{{rabbitmq.rx.port}}/shopifyListingExchange?queue=shopifyListingQueue&amp;routingKey=shopifyListingKey&amp;exchangeType=topic&amp;connectionFactory=#rxListingQConnectionFactory&amp;autoDelete=false&amp;durable=true&amp;autoAck=false&amp;prefetchEnabled=true&amp;prefetchSize=0&amp;prefetchCount=1&amp;prefetchGlobal=false&amp;concurrentConsumers=5" />
+			<convertBodyTo type="java.lang.String" />
+			<process ref="convertToJSON" />
+			<process ref="initializeMessageListenerRoute" />
+			<choice>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'addItem'</simple>
+					<to uri="direct:startPost" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'updateItem'</simple>
+					<to uri="direct:startUpdate" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'removeArrayItem'</simple>
+					<to uri="direct:removeArrayItem" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'batchAddItem' || ${exchangeProperty.requestType} == 'batchEditItem'
+					</simple>
+					<to uri="direct:batchAddItem" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'pullInventory'</simple>
+					<to uri="direct:pullInventory" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'updateOrder'</simple>
+					<to uri="direct:updateOrder" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'processPullInventoryByPage'</simple>
+					<to uri="direct:processPullInventoryByPage" />
+				</when>
+				<when>
+					<simple>${exchangeProperty.requestType} == 'processNotification'</simple>
+					<to uri="direct:processNotification" />
+				</when>
+			</choice>
+		</route>
+
+	</camelContext>
+</beans>

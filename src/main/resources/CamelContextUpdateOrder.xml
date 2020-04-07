@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:cxf="http://camel.apache.org/schema/cxf"
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+       
+       <bean id="initializeUpdateOrderRoute" class="com.sellinall.shopify.init.InitializeUpdateOrderRoute" />
+       <bean id="checkIfOrderUpdateRequired" class="com.sellinall.shopify.requests.CheckIfOrderUpdateRequired" />
+       <bean id="submitOrderUpdateRequest" class="com.sellinall.shopify.requests.SubmitOrderUpdateRequest" />
+       <bean id="preparePublishMessageForPNQ" class="com.sellinall.shopify.message.PreparePublishMessageForPNQ" />
+       <bean id="loadFulfillmentDetails" class="com.sellinall.shopify.requests.LoadFulfillmentDetails" />
+       <bean id="initOrderUpdate" class="com.sellinall.shopify.init.InitOrderUpdate" />
+       <routeContext id="updateOrderRoutes" xmlns="http://camel.apache.org/schema/spring">
+	       <route id="updateOrder">
+			<from uri="direct:updateOrder" />
+			<process ref="initializeUpdateOrderRoute" />
+			<!-- Load User Data From DB -->
+			<process ref="userDBQuery" />
+			<to uri="direct:updateOrderDetails" />
+		</route>
+		<route id="updateOrderDetails">
+			<from uri="direct:updateOrderDetails" />
+			<process ref="initOrderUpdate" />
+			<process ref="checkIfOrderUpdateRequired" />
+			<choice>
+				<when>
+					<simple>${header.isOrderUpdateRequired} == true</simple>
+<!-- 					only Dispatched status order required location details -->
+					<when><simple>${exchangeProperty.orderStatus} == 'DISPATCHED'</simple>
+					   <process ref="loadFulfillmentDetails" />
+					</when>
+					<process ref="submitOrderUpdateRequest" />
+					<to uri="direct:notificationFromSellInAll" />
+				</when>
+			</choice>
+		</route>
+
+		<route id="notificationFromSellInAll">
+			<from uri="direct:notificationFromSellInAll" />
+			<process ref="preparePublishMessageForPNQ" />
+			<setHeader headerName="rabbitmq.ROUTING_KEY">
+				<constant>partnerNotifKey</constant>
+			</setHeader>
+			<setHeader headerName="rabbitmq.DELIVERY_MODE">
+				<constant>2</constant>
+			</setHeader>
+			<convertBodyTo type="java.lang.String" />
+			<to
+				uri="rabbitmq://{{partnerNotif.host}}:{{partnerNotif.tx.port}}/partnerNotifExchange?connectionFactory=#txPartnerNotifFactory&amp;exchangeType=topic&amp;autoDelete=false&amp;durable=true&amp;declare=false" />
+		</route>
+
+	</routeContext>
+</beans>
